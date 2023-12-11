@@ -18,9 +18,9 @@
 // This is where scripts' loading functions should be declared:
 
 // The name of this function should match:
-void AddEventosCustomScripts();
+void AddSC_npc_custom_gossip();
 
-void AddCustomScripts()
+void AddEventosCustomScripts()
 {
-    AddEventosCustomScripts();
+    AddSC_npc_custom_gossip();
 }
