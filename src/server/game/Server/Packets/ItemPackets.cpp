@@ -373,3 +373,55 @@ void WorldPackets::Item::RemoveNewItem::Read()
 {
     _worldPacket >> ItemGuid;
 }
+
+void WorldPackets::Item::ChangeBagSlotFlag::Read()
+{
+    _worldPacket >> BagIndex;
+    FlagToChange = _worldPacket.read<BagSlotFlags, uint32>();
+    On = _worldPacket.ReadBit();
+}
+
+void WorldPackets::Item::ChangeBankBagSlotFlag::Read()
+{
+    _worldPacket >> BagIndex;
+    FlagToChange = _worldPacket.read<BagSlotFlags, uint32>();
+    On = _worldPacket.ReadBit();
+}
+
+void WorldPackets::Item::SetBackpackAutosortDisabled::Read()
+{
+    Disable = _worldPacket.ReadBit();
+}
+
+void WorldPackets::Item::SetBackpackSellJunkDisabled::Read()
+{
+    Disable = _worldPacket.ReadBit();
+}
+
+void WorldPackets::Item::SetBankAutosortDisabled::Read()
+{
+    Disable = _worldPacket.ReadBit();
+}
+
+WorldPacket const* WorldPackets::Item::AddItemPassive::Write()
+{
+    _worldPacket << int32(SpellID);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Item::RemoveItemPassive::Write()
+{
+    _worldPacket << int32(SpellID);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Item::SendItemPassives::Write()
+{
+    _worldPacket << uint32(SpellID.size());
+    if (!SpellID.empty())
+        _worldPacket.append(SpellID.data(), SpellID.size());
+
+    return &_worldPacket;
+}

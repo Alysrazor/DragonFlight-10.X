@@ -72,6 +72,7 @@ namespace WorldPackets
             float EnergyMulti = 0.0f;
             bool Leader = false;
             std::vector<int32> QuestItems;
+            std::vector<int32> QuestCurrencies;
             uint32 CreatureMovementInfoID = 0;
             int32 HealthScalingExpansion = 0;
             uint32 RequiredExpansion = 0;
@@ -96,12 +97,6 @@ namespace WorldPackets
             bool Allow = false;
             CreatureStats Stats;
             uint32 CreatureID = 0;
-        };
-
-        struct PlayerGuidLookupHint
-        {
-            Optional<uint32> VirtualRealmAddress; ///< current realm (?) (identifier made from the Index, BattleGroup and Region)
-            Optional<uint32> NativeRealmAddress; ///< original realm (?) (identifier made from the Index, BattleGroup and Region)
         };
 
         class QueryPlayerNames final : public ClientPacket
@@ -130,6 +125,7 @@ namespace WorldPackets
             uint8 ClassID = CLASS_NONE;
             uint8 Level = 0;
             uint8 Unused915 = 0;
+            int32 TimerunningSeasonID = 0;
             DeclinedName DeclinedNames;
         };
 
@@ -210,8 +206,8 @@ namespace WorldPackets
 
             uint32 TextID = 0;
             bool Allow = false;
-            std::array<float, MAX_NPC_TEXT_OPTIONS> Probabilities;
-            std::array<uint32, MAX_NPC_TEXT_OPTIONS> BroadcastTextID;
+            std::array<float, MAX_NPC_TEXT_OPTIONS> Probabilities = { };
+            std::array<uint32, MAX_NPC_TEXT_OPTIONS> BroadcastTextID = { };
         };
 
         class QueryGameObject final : public ClientPacket
@@ -233,7 +229,7 @@ namespace WorldPackets
             std::string UnkString;
             uint32 Type = 0;
             uint32 DisplayID = 0;
-            uint32 Data[MAX_GAMEOBJECT_DATA];
+            std::array<uint32, MAX_GAMEOBJECT_DATA> Data = { };
             float Size = 0.0f;
             std::vector<int32> QuestItems;
             uint32 ContentTuningId = 0;
@@ -326,7 +322,7 @@ namespace WorldPackets
             void Read() override;
 
             int32 MissingQuestCount = 0;
-            std::array<int32, 175> MissingQuestPOIs;
+            std::array<int32, 175> MissingQuestPOIs = { };
         };
 
         class QuestPOIQueryResponse final : public ServerPacket
@@ -440,7 +436,6 @@ namespace WorldPackets
             WorldPackets::Auth::VirtualRealmNameInfo NameInfo;
         };
 
-        ByteBuffer& operator<<(ByteBuffer& data, PlayerGuidLookupHint const& lookupHint);
         ByteBuffer& operator<<(ByteBuffer& data, PlayerGuidLookupData const& lookupData);
     }
 }

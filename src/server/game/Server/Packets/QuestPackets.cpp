@@ -485,6 +485,7 @@ WorldPacket const* QuestGiverQuestDetails::Write()
     _worldPacket.WriteBits(PortraitTurnInText.size(), 10);
     _worldPacket.WriteBits(PortraitTurnInName.size(), 8);
     _worldPacket.WriteBit(AutoLaunched);
+    _worldPacket.WriteBit(FromContentPush);
     _worldPacket.WriteBit(false);   // unused in client
     _worldPacket.WriteBit(StartCheat);
     _worldPacket.WriteBit(DisplayPopup);
@@ -678,6 +679,13 @@ void PushQuestToParty::Read()
 WorldPacket const* DailyQuestsReset::Write()
 {
     _worldPacket << int32(Count);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* QuestForceRemoved::Write()
+{
+    _worldPacket << int32(QuestID);
 
     return &_worldPacket;
 }

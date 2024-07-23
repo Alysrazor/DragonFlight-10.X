@@ -63,6 +63,9 @@ enum HotfixDatabaseStatements : uint32
     HOTFIX_SEL_AREA_TRIGGER,
     HOTFIX_SEL_AREA_TRIGGER_MAX_ID,
 
+    HOTFIX_SEL_AREA_TRIGGER_ACTION_SET,
+    HOTFIX_SEL_AREA_TRIGGER_ACTION_SET_MAX_ID,
+
     HOTFIX_SEL_ARMOR_LOCATION,
     HOTFIX_SEL_ARMOR_LOCATION_MAX_ID,
 
@@ -191,6 +194,9 @@ enum HotfixDatabaseStatements : uint32
 
     HOTFIX_SEL_CHALLENGE_MODE_ITEM_BONUS_OVERRIDE,
     HOTFIX_SEL_CHALLENGE_MODE_ITEM_BONUS_OVERRIDE_MAX_ID,
+
+    HOTFIX_SEL_CHAR_BASE_INFO,
+    HOTFIX_SEL_CHAR_BASE_INFO_MAX_ID,
 
     HOTFIX_SEL_CHAR_TITLES,
     HOTFIX_SEL_CHAR_TITLES_MAX_ID,
@@ -634,6 +640,9 @@ enum HotfixDatabaseStatements : uint32
     HOTFIX_SEL_LIQUID_TYPE,
     HOTFIX_SEL_LIQUID_TYPE_MAX_ID,
 
+    HOTFIX_SEL_LOCATION,
+    HOTFIX_SEL_LOCATION_MAX_ID,
+
     HOTFIX_SEL_LOCK,
     HOTFIX_SEL_LOCK_MAX_ID,
 
@@ -703,6 +712,15 @@ enum HotfixDatabaseStatements : uint32
     HOTFIX_SEL_PARAGON_REPUTATION,
     HOTFIX_SEL_PARAGON_REPUTATION_MAX_ID,
 
+    HOTFIX_SEL_PATH,
+    HOTFIX_SEL_PATH_MAX_ID,
+
+    HOTFIX_SEL_PATH_NODE,
+    HOTFIX_SEL_PATH_NODE_MAX_ID,
+
+    HOTFIX_SEL_PATH_PROPERTY,
+    HOTFIX_SEL_PATH_PROPERTY_MAX_ID,
+
     HOTFIX_SEL_PHASE,
     HOTFIX_SEL_PHASE_MAX_ID,
 
@@ -728,6 +746,10 @@ enum HotfixDatabaseStatements : uint32
 
     HOTFIX_SEL_PVP_ITEM,
     HOTFIX_SEL_PVP_ITEM_MAX_ID,
+
+    HOTFIX_SEL_PVP_STAT,
+    HOTFIX_SEL_PVP_STAT_MAX_ID,
+    HOTFIX_SEL_PVP_STAT_LOCALE,
 
     HOTFIX_SEL_PVP_SEASON,
     HOTFIX_SEL_PVP_SEASON_MAX_ID,
@@ -865,6 +887,12 @@ enum HotfixDatabaseStatements : uint32
 
     HOTFIX_SEL_SPELL_EFFECT,
     HOTFIX_SEL_SPELL_EFFECT_MAX_ID,
+
+    HOTFIX_SEL_SPELL_EMPOWER,
+    HOTFIX_SEL_SPELL_EMPOWER_MAX_ID,
+
+    HOTFIX_SEL_SPELL_EMPOWER_STAGE,
+    HOTFIX_SEL_SPELL_EMPOWER_STAGE_MAX_ID,
 
     HOTFIX_SEL_SPELL_EQUIPPED_ITEMS,
     HOTFIX_SEL_SPELL_EQUIPPED_ITEMS_MAX_ID,
@@ -1110,6 +1138,10 @@ enum HotfixDatabaseStatements : uint32
     HOTFIX_SEL_VEHICLE_SEAT,
     HOTFIX_SEL_VEHICLE_SEAT_MAX_ID,
 
+    HOTFIX_SEL_VIGNETTE,
+    HOTFIX_SEL_VIGNETTE_MAX_ID,
+    HOTFIX_SEL_VIGNETTE_LOCALE,
+
     HOTFIX_SEL_WMO_AREA_TABLE,
     HOTFIX_SEL_WMO_AREA_TABLE_MAX_ID,
     HOTFIX_SEL_WMO_AREA_TABLE_LOCALE,
@@ -1134,9 +1166,7 @@ class TC_DATABASE_API HotfixDatabaseConnection : public MySQLConnection
 public:
     typedef HotfixDatabaseStatements Statements;
 
-    //- Constructors for sync and async connections
-    HotfixDatabaseConnection(MySQLConnectionInfo& connInfo);
-    HotfixDatabaseConnection(ProducerConsumerQueue<SQLOperation*>* q, MySQLConnectionInfo& connInfo);
+    HotfixDatabaseConnection(MySQLConnectionInfo& connInfo, ConnectionFlags connectionFlags);
     ~HotfixDatabaseConnection();
 
     //- Loads database type specific prepared statements

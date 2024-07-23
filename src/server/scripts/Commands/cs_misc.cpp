@@ -292,7 +292,7 @@ public:
             zoneX, zoneY, groundZ, floorZ, map->GetMinHeight(object->GetPhaseShift(), object->GetPositionX(), object->GetPositionY()), haveMap, haveVMap, haveMMap);
 
         LiquidData liquidStatus;
-        ZLiquidStatus status = map->GetLiquidStatus(object->GetPhaseShift(), object->GetPositionX(), object->GetPositionY(), object->GetPositionZ(), map_liquidHeaderTypeFlags::AllLiquids, &liquidStatus);
+        ZLiquidStatus status = map->GetLiquidStatus(object->GetPhaseShift(), object->GetPositionX(), object->GetPositionY(), object->GetPositionZ(), {}, &liquidStatus);
         if (status)
             handler->PSendSysMessage(LANG_LIQUID_STATUS, liquidStatus.level, liquidStatus.depth_level, liquidStatus.entry, uint32(liquidStatus.type_flags.AsUnderlyingType()), status);
 
@@ -1113,13 +1113,6 @@ public:
         }
 
         uint32 offset = area->AreaBit / PLAYER_EXPLORED_ZONES_BITS;
-        if (offset >= PLAYER_EXPLORED_ZONES_SIZE)
-        {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
-            return false;
-        }
-
         uint64 val = UI64LIT(1) << (area->AreaBit % PLAYER_EXPLORED_ZONES_BITS);
         playerTarget->AddExploredZones(offset, val);
 
@@ -1153,13 +1146,6 @@ public:
         }
 
         uint32 offset = area->AreaBit / PLAYER_EXPLORED_ZONES_BITS;
-        if (offset >= PLAYER_EXPLORED_ZONES_SIZE)
-        {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
-            return false;
-        }
-
         uint64 val = UI64LIT(1) << (area->AreaBit % PLAYER_EXPLORED_ZONES_BITS);
         playerTarget->RemoveExploredZones(offset, val);
 
@@ -1486,7 +1472,7 @@ public:
         // prevent generation all items with itemset field value '0'
         if (*itemSetId == 0)
         {
-            handler->PSendSysMessage(LANG_NO_ITEMS_FROM_ITEMSET_FOUND, itemSetId);
+            handler->PSendSysMessage(LANG_NO_ITEMS_FROM_ITEMSET_FOUND, *itemSetId);
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -1529,6 +1515,8 @@ public:
 
                 Item* item = playerTarget->StoreNewItem(dest, itemTemplatePair.first, true, {}, GuidSet(), itemContext,
                     bonusListIDsForItem.empty() ? nullptr : &bonusListIDsForItem);
+                if (!item)
+                    continue;
 
                 // remove binding (let GM give it to another player later)
                 if (player == playerTarget)
@@ -1547,7 +1535,7 @@ public:
 
         if (!found)
         {
-            handler->PSendSysMessage(LANG_NO_ITEMS_FROM_ITEMSET_FOUND, itemSetId);
+            handler->PSendSysMessage(LANG_NO_ITEMS_FROM_ITEMSET_FOUND, *itemSetId);
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -1600,7 +1588,7 @@ public:
         SkillLineEntry const* skillLine = sSkillLineStore.LookupEntry(skillId);
         if (!skillLine)
         {
-            handler->PSendSysMessage(LANG_INVALID_SKILL_ID, skillId);
+            handler->PSendSysMessage(LANG_INVALID_SKILL_ID, *skillId);
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -1618,7 +1606,7 @@ public:
         // add the skill to the player's book with step 1 (which is the first rank, in most cases something
         // like 'Apprentice <skill>'.
         target->SetSkill(skillId, targetHasSkill ? target->GetSkillStep(skillId) : 1, level, max);
-        handler->PSendSysMessage(LANG_SET_SKILL, skillId, skillLine->DisplayName[handler->GetSessionDbcLocale()], handler->GetNameLink(target).c_str(), level, max);
+        handler->PSendSysMessage(LANG_SET_SKILL, *skillId, skillLine->DisplayName[handler->GetSessionDbcLocale()], handler->GetNameLink(target).c_str(), level, max);
         return true;
     }
 

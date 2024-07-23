@@ -17,7 +17,7 @@
 
 #include "MySQLConnection.h"
 #include "Common.h"
-#include "DatabaseWorker.h"
+#include "IoContext.h"
 #include "Log.h"
 #include "MySQLHacks.h"
 #include "MySQLPreparedStatement.h"
@@ -47,23 +47,13 @@ MySQLConnectionInfo::MySQLConnectionInfo(std::string const& infoString)
         ssl.assign(tokens[5]);
 }
 
-MySQLConnection::MySQLConnection(MySQLConnectionInfo& connInfo) :
+MySQLConnection::MySQLConnection(MySQLConnectionInfo& connInfo, ConnectionFlags connectionFlags) :
 m_reconnecting(false),
 m_prepareError(false),
-m_queue(nullptr),
 m_Mysql(nullptr),
 m_connectionInfo(connInfo),
-m_connectionFlags(CONNECTION_SYNCH) { }
-
-MySQLConnection::MySQLConnection(ProducerConsumerQueue<SQLOperation*>* queue, MySQLConnectionInfo& connInfo) :
-m_reconnecting(false),
-m_prepareError(false),
-m_queue(queue),
-m_Mysql(nullptr),
-m_connectionInfo(connInfo),
-m_connectionFlags(CONNECTION_ASYNC)
+m_connectionFlags(connectionFlags)
 {
-    m_worker = std::make_unique<DatabaseWorker>(m_queue, this);
 }
 
 MySQLConnection::~MySQLConnection()
@@ -74,7 +64,11 @@ MySQLConnection::~MySQLConnection()
 void MySQLConnection::Close()
 {
     // Stop the worker thread before the statements are cleared
-    m_worker.reset();
+    if (m_workerThread)
+    {
+        m_workerThread->join();
+        m_workerThread.reset();
+    }
 
     m_stmts.clear();
 
@@ -213,6 +207,25 @@ bool MySQLConnection::Execute(char const* sql)
     return true;
 }
 
+static auto mysql_bind_param_no_deprecated(MYSQL_STMT* stmt, MYSQL_BIND* bnd)
+{
+#if TRINITY_COMPILER == TRINITY_COMPILER_GNU
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#else
+#pragma warning(push)
+#pragma warning(disable: 4996)
+#endif
+
+    return mysql_stmt_bind_param(stmt, bnd);
+
+#if TRINITY_COMPILER == TRINITY_COMPILER_GNU
+#pragma GCC diagnostic pop
+#else
+#pragma warning(pop)
+#endif
+}
+
 bool MySQLConnection::Execute(PreparedStatementBase* stmt)
 {
     if (!m_Mysql)
@@ -230,7 +243,7 @@ bool MySQLConnection::Execute(PreparedStatementBase* stmt)
 
     uint32 _s = getMSTime();
 
-    if (mysql_stmt_bind_param(msql_STMT, msql_BIND))
+    if (mysql_bind_param_no_deprecated(msql_STMT, msql_BIND))
     {
         uint32 lErrno = mysql_errno(m_Mysql);
         TC_LOG_ERROR("sql.sql", "SQL(p): {}\n [ERROR]: [{}] {}", m_mStmt->getQueryString(), lErrno, mysql_stmt_error(msql_STMT));
@@ -278,7 +291,7 @@ bool MySQLConnection::_Query(PreparedStatementBase* stmt, MySQLPreparedStatement
 
     uint32 _s = getMSTime();
 
-    if (mysql_stmt_bind_param(msql_STMT, msql_BIND))
+    if (mysql_bind_param_no_deprecated(msql_STMT, msql_BIND))
     {
         uint32 lErrno = mysql_errno(m_Mysql);
         TC_LOG_ERROR("sql.sql", "SQL(p): {}\n [ERROR]: [{}] {}", m_mStmt->getQueryString(), lErrno, mysql_stmt_error(msql_STMT));
@@ -388,7 +401,7 @@ void MySQLConnection::CommitTransaction()
 
 int MySQLConnection::ExecuteTransaction(std::shared_ptr<TransactionBase> transaction)
 {
-    std::vector<SQLElementData> const& queries = transaction->m_queries;
+    std::vector<TransactionData> const& queries = transaction->m_queries;
     if (queries.empty())
         return -1;
 
@@ -396,35 +409,12 @@ int MySQLConnection::ExecuteTransaction(std::shared_ptr<TransactionBase> transac
 
     for (auto itr = queries.begin(); itr != queries.end(); ++itr)
     {
-        SQLElementData const& data = *itr;
-        switch (itr->type)
+        if (!std::visit([this](auto&& data) { return this->Execute(TransactionData::ToExecutable(data)); }, itr->query))
         {
-            case SQL_ELEMENT_PREPARED:
-            {
-                PreparedStatementBase* stmt = data.element.stmt;
-                ASSERT(stmt);
-                if (!Execute(stmt))
-                {
-                    TC_LOG_WARN("sql.sql", "Transaction aborted. {} queries not executed.", (uint32)queries.size());
-                    int errorCode = GetLastError();
-                    RollbackTransaction();
-                    return errorCode;
-                }
-            }
-            break;
-            case SQL_ELEMENT_RAW:
-            {
-                char const* sql = data.element.query;
-                ASSERT(sql);
-                if (!Execute(sql))
-                {
-                    TC_LOG_WARN("sql.sql", "Transaction aborted. {} queries not executed.", (uint32)queries.size());
-                    int errorCode = GetLastError();
-                    RollbackTransaction();
-                    return errorCode;
-                }
-            }
-            break;
+            TC_LOG_WARN("sql.sql", "Transaction aborted. {} queries not executed.", queries.size());
+            int errorCode = GetLastError();
+            RollbackTransaction();
+            return errorCode;
         }
     }
 
@@ -450,6 +440,24 @@ void MySQLConnection::Ping()
 uint32 MySQLConnection::GetLastError()
 {
     return mysql_errno(m_Mysql);
+}
+
+void MySQLConnection::StartWorkerThread(Trinity::Asio::IoContext* context)
+{
+    m_workerThread = std::make_unique<std::thread>([context]
+    {
+        boost::asio::executor_work_guard executorWorkGuard = boost::asio::make_work_guard(context->get_executor());
+
+        context->run();
+    });
+}
+
+std::thread::id MySQLConnection::GetWorkerThreadId() const
+{
+    if (m_workerThread)
+        return m_workerThread->get_id();
+
+    return {};
 }
 
 bool MySQLConnection::LockIfReady()
