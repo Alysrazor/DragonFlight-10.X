@@ -9,9 +9,9 @@ enum Spells : uint32
 	SPELL_BULWARK_OF_ORDER = 387740,
     SPELL_HOLY_FORM = 46565,
     SPELL_HOLY_SMITE = 62443,
-	SPELL_HOLY_WRATH = 343154, // Hechizo de medio daÃ±o 15 - 20s
+	SPELL_HOLY_WRATH = 343154, // Hechizo de medio daño 15 - 20s
     SPELL_HOLY_WRATH_ENRAGE = 227823, // Enrage
-    SPELL_TITANIC_BULKWARK = 235028, // Hechizo largo de protecciÃ³n cada 1m
+    SPELL_TITANIC_BULKWARK = 235028, // Hechizo largo de protección cada 1m
 
     // Holy Elemental
     SPELL_HOLY_FLARE = 242715,
@@ -91,20 +91,18 @@ public:
         WorldBossAI::JustDied(p_Killer);
     }
 
-    void DamageTaken(Unit* p_Attacker, uint32& p_Damage, DamageEffectType p_DamageEffectType, SpellInfo const* p_SpellInfo = nullptr) override
+    void DamageTaken(Unit* p_Attacker, uint32& p_Damage, DamageEffectType /*p_DamageEffectType*/, SpellInfo const* p_SpellInfo = nullptr) override
     {
         if (p_Attacker->GetTypeId() == TYPEID_PLAYER || p_Attacker->GetGUID().IsPet())
         {
             if (me->HealthBelowPctDamaged(67, p_Damage) && m_Events.IsInPhase(PHASE_ONE))
-            {
                 m_Events.SetPhase(INTERPHASE_HOLY);
-            }
         }
     }
 
     void EnterEvadeMode(EvadeReason p_Reason) override
     {
-        WorldBossAI::EnterEvadeMode();
+        WorldBossAI::EnterEvadeMode(p_Reason);
         me->DespawnOrUnsummon(0s, 30s);
     }
 
